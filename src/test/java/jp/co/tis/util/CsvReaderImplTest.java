@@ -1,17 +1,17 @@
 package jp.co.tis.util;
 
 import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Map;
 
-import jp.co.tis.exception.FileFormatException;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import jp.co.tis.exception.FileFormatException;
 
 /**
  * CsvReaderImplをテストするクラス。
@@ -28,7 +28,11 @@ public class CsvReaderImplTest {
     public ExpectedException exception = ExpectedException.none();
 
     /**
-     * テストケース仕様書項目番号1-1を参照。
+     * {@link CsvReaderImpl#open()}のテスト。
+     * 
+     * <pre>
+     * 正常なCSVファイルを読み込む場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -39,7 +43,29 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号1-2を参照。
+     * {@link CsvReaderImpl#open()}のテスト。
+     * 
+     * <pre>
+     * すでに開かれているファイルに対してopenメソッドを実行する場合
+     * </pre>
+     *
+     * @throws Exception 例外。
+     */
+    @Test
+    public void testOpenInCaseOfFileAlreadyOpen() throws Exception {
+        CsvReader csvReader = new CsvReaderImpl("src/test/java/jp/co/tis/util/testData/normal.csv");
+        exception.expect(IllegalStateException.class);
+        exception.expectMessage("すでにファイルが開かれています。");
+        csvReader.open();
+        csvReader.open();
+    }
+
+    /**
+     * {@link CsvReaderImpl#open()}のテスト。
+     * 
+     * <pre>
+     * フィルパスに存在しないファイルパスを指定した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -52,7 +78,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号1-3を参照。
+     * {@link CsvReaderImpl#open()}のテスト。
+     * 
+     * <pre>
+     * フィルパスにヘッダー部が存在しないCSVファイルのファイルパスを指定した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -65,7 +95,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号1-4を参照。
+     * {@link CsvReaderImpl#open()}のテスト。
+     * 
+     * <pre>
+     * フィルパスにヘッダー部に重複が存在するCSVファイルのファイルパスを指定した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -78,7 +112,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号1-5を参照。
+     * {@link CsvReaderImpl#open()}のテスト。
+     * 
+     * <pre>
+     * フィルパスにヘッダー部に空項目が存在するCSVファイルのファイルパスを指定した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -91,7 +129,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号2-1を参照。
+     * {@link CsvReaderImpl#close()}のテスト。
+     * 
+     * <pre>
+     * ファイルが開かれた状態でcloseメソッドを実行した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -106,7 +148,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号3-1を参照。
+     * {@link CsvReaderImpl#readLine()}のテスト。
+     * 
+     * <pre>
+     * 次の読み込み行がある状態でreadLineメソッドを実行した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -122,7 +168,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号3-2を参照。
+     * {@link CsvReaderImpl#readLine()}のテスト。
+     * 
+     * <pre>
+     * 次の読み込み行がない状態でreadLineメソッドを実行した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -137,7 +187,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号3-3を参照。
+     * {@link CsvReaderImpl#readLine()}のテスト。
+     * 
+     * <pre>
+     * 次の読み込み行がヘッダー部と項目数が異なる状態でreadLineメソッドを実行した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -151,7 +205,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号3-4を参照。
+     * {@link CsvReaderImpl#readLine()}のテスト。
+     * 
+     * <pre>
+     * データ部がないCSVファイルに対してreadLineメソッドを実行した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */
@@ -163,7 +221,11 @@ public class CsvReaderImplTest {
     }
 
     /**
-     * テストケース仕様書項目番号3-5を参照。
+     * {@link CsvReaderImpl#readLine()}のテスト。
+     * 
+     * <pre>
+     * 次の読み込み行に空項目が含まれる状態でreadLineメソッドを実行した場合
+     * </pre>
      *
      * @throws Exception 例外。
      */

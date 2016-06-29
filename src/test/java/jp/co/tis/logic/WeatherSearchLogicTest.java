@@ -4,7 +4,6 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import java.util.List;
-import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -58,10 +57,14 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * ウォーミングアップのテスト。
+     * {@link WeatherSearchLogic#createPersonInfo()}のテスト。
+     *
+     * <pre>
+     * ウォーミングアップのテスト
+     * </pre>
      */
     @Test
-    public void testWarmingUp() {
+    public void testCreatePersonInfo() {
         Person person = target.createPersonInfo();
 
         assertThat(person.getMyName(), is("TIS 太郎"));
@@ -71,12 +74,116 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索正常系のバリデーションテスト。(全ての項目に正常な値が入力された場合)
+     * {@link WeatherSearchLogic#findBySqlWeatherList()}のテスト。
+     *
+     * <pre>
+     * 天気一覧検索のテスト
+     * </pre>
      */
     @Test
-    public void testWeatherSearchValidationNormal() {
+    public void testFindBySqlWeatherList() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        List<Weather> resultWeatherList = target.findBySqlWeatherList();
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlSimple(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 検索条件を設定せずに検索を行った場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlSimpleNoCondition() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDate("2015/01/01");
+        List<Weather> resultWeatherList = target.findBySqlSimple(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlSimple(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlSimplePlace() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setPlace("東京");
+
+        List<Weather> resultWeatherList = target.findBySqlSimple(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlSimple(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 検索結果が0件となる条件の場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlSimpleNoResult() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setPlace("北海道");
+
+        List<Weather> resultWeatherList = target.findBySqlSimple(form);
+        assertThat(resultWeatherList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目に正常な値が入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormNormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDate("2016/02/29");
         form.setPlace("東京");
         form.setWeather("晴れ");
         form.setMaxTemperature("20");
@@ -87,94 +194,49 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索異常系のバリデーションテスト。(日付が日付形式でない場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目がブランクの場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchValidationAbnormalDate() {
+    public void testValidateFormNormalAllBlank() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDate("20150101");
+        form.setWeatherDate("");
+        form.setPlace("");
+        form.setWeather("");
+        form.setMaxTemperature("");
+        form.setMinTemperature("");
         List<String> errorList = target.validateForm(form);
 
-        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+        assertThat(errorList.size(), is(0));
     }
 
     /**
-     * 天気検索異常系のバリデーションテスト。(場所が10文字を超えている場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目がnullの場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchValidationOverflowPlace() {
+    public void testValidateFormNormalAllNull() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setPlace("12345678901");
         List<String> errorList = target.validateForm(form);
 
-        assertThat(errorList.get(0), is("場所は10文字以内で入力してください。"));
+        assertThat(errorList.size(), is(0));
     }
 
     /**
-     * 天気検索異常系のバリデーションテスト。(天気が10文字を超えている場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目に異常な値が入力された場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchValidationOverflowWeather() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("12345678901");
-        List<String> errorList = target.validateForm(form);
-
-        assertThat(errorList.get(0), is("天気は10文字以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最高気温に数値以外のものが入力された場合)
-     */
-    @Test
-    public void testWeatherSearchValidationAbnormalMaxTemperature() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperature("あ");
-        List<String> errorList = target.validateForm(form);
-
-        assertThat(errorList.get(0), is("最高気温は数値で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最高気温に3桁を超える値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchValidationOverflowMaxTemperature() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperature("1000");
-        List<String> errorList = target.validateForm(form);
-
-        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最低気温に数値以外のものが入力された場合)
-     */
-    @Test
-    public void testWeatherSearchValidationAbnormlMinTemperature() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperature("あ");
-        List<String> errorList = target.validateForm(form);
-
-        assertThat(errorList.get(0), is("最低気温は数値で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最低気温に3桁を超える値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchValidationOverflowMinTemperature() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperature("1000");
-        List<String> errorList = target.validateForm(form);
-
-        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(全ての項目に異常な値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchValidationAbnormlAll() {
+    public void testValidateFormAbnormalAll() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDate("20150101");
         form.setPlace("12345678901");
@@ -191,120 +253,319 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索SQLテスト。(全ての項目が入力されなかった場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目の形式が不正な場合(yyyyMMdd)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlAllEmpty() {
+    public void testValidateFormWeatherDateAbnormalFormat() {
         WeatherSearchForm form = new WeatherSearchForm();
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setWeatherDate("20150101");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is("SELECT * FROM WEATHER"));
-        assertThat(resultCondition.get("weatherDate"), is(nullValue()));
-        assertThat(resultCondition.get("place"), is(nullValue()));
-        assertThat(resultCondition.get("weather"), is(nullValue()));
-        assertThat(resultCondition.get("maxTemperature"), is(nullValue()));
-        assertThat(resultCondition.get("minTemperature"), is(nullValue()));
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
     }
 
     /**
-     * 天気検索SQLテスト。(日付だけ入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目の形式が不正な場合(2015/01/01A)
+     * ※SimpleDateFormatを使用したパースでは前方一致で日付を取り扱うため、文字列の後ろに不正な値があっても無視されてしまう。
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlOnlyDate() {
+    public void testValidateFormWeatherDateAbnormalFormatBackward() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDate("2015/01/01");
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setWeatherDate("2015/01/01A");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE WEATHER_DATE = :weatherDate"));
-        assertThat(resultCondition.get("weatherDate"), is("2015/01/01"));
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
     }
 
     /**
-     * 天気検索SQLテスト。(場所だけ入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目の形式が不正な場合(全角数字を使用)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlOnlyPlace() {
+    public void testValidateFormWeatherDateAbnormalFormatZenkaku() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setPlace("東京");
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setWeatherDate("２０１５/０１/０１");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE PLACE = :place"));
-        assertThat(resultCondition.get("place"), is("東京"));
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
     }
 
     /**
-     * 天気検索SQLテスト。(天気だけ入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目がうるう年の正常な日付の場合(2016 / 02 / 29)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlOnlyWeather() {
+    public void testValidateFormWeatherDateNormalDateLeapYear() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("晴れ");
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setWeatherDate("2016/02/29");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE WEATHER = :weather"));
-        assertThat(resultCondition.get("weather"), is("晴れ"));
+        assertThat(errorList.size(), is(0));
     }
 
     /**
-     * 天気検索SQLテスト。(最高気温だけ入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目がうるう年の不正な日付の場合(2015 / 02 / 29)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlOnlyMaxTemperature() {
+    public void testValidateFormWeatherDateAbnormalDateLeapYear() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperature("30");
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setWeatherDate("2015/02/29");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE MAX_TEMPERATURE = :maxTemperature"));
-        assertThat(resultCondition.get("maxTemperature"), is("30"));
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
     }
 
     /**
-     * 天気検索SQLテスト。(最低気温だけ入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所項目の文字数が最大の場合（10文字）
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlOnlyMinTemperature() {
+    public void testValidateFormPlaceNormal() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperature("0");
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setPlace("場所れれれれれれれれ");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE MIN_TEMPERATURE = :minTemperature"));
-        assertThat(resultCondition.get("minTemperature"), is("0"));
+        assertThat(errorList.size(), is(0));
     }
 
     /**
-     * 天気検索SQLテスト。(全ての項目が入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所項目の文字数が最大数を超える場合（11文字）
+     * </pre>
      */
     @Test
-    public void testWeatherSearchSqlAll() {
+    public void testValidateFormPlaceAbnormal() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDate("2015/01/01");
-        form.setPlace("東京");
-        form.setWeather("晴れ");
-        form.setMaxTemperature("30");
-        form.setMinTemperature("0");
-        String resultSql = target.createSql(form);
-        Map<String, String> resultCondition = target.createCondition(form);
+        form.setPlace("場所れれれれれれれれれ");
+        List<String> errorList = target.validateForm(form);
 
-        assertThat(resultSql, is(
-                "SELECT * FROM WEATHER WHERE WEATHER_DATE = :weatherDate and PLACE = :place and WEATHER = :weather and MAX_TEMPERATURE = :maxTemperature and MIN_TEMPERATURE = :minTemperature"));
-        assertThat(resultCondition.get("weatherDate"), is("2015/01/01"));
-        assertThat(resultCondition.get("place"), is("東京"));
-        assertThat(resultCondition.get("weather"), is("晴れ"));
-        assertThat(resultCondition.get("maxTemperature"), is("30"));
-        assertThat(resultCondition.get("minTemperature"), is("0"));
+        assertThat(errorList.get(0), is("場所は10文字以内で入力してください。"));
     }
 
     /**
-     * 天気検索発展正常系のバリデーションテスト。(全ての項目に正常な値が入力された場合)
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 天気項目の文字数が最大の場合（10文字）
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationNormal() {
+    public void testValidateFormWeatherNormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("天気れれれれれれれれ");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 天気項目の文字数が最大数を超える場合（11文字）
+     * </pre>
+     */
+    @Test
+    public void testValidateFormWeatherAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("天気れれれれれれれれれ");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("天気は10文字以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温に数値以外のものが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMaxTemperatureAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperature("あ");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("最高気温は数値で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温に正の整数3桁の上限が入力された場合(999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMaxTemperatureNormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperature("999");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温に負の整数3桁の下限が入力された場合(-999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMaxTemperatureNormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperature("-999");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温に正の整数3桁を超える入力がされた場合(1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMaxTemperatureAbnormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperature("1000");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温に負の整数3桁を下回る入力がされた場合(-1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMaxTemperatureAbnormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperature("-1000");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温に数値以外のものが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMinTemperatureAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperature("あ");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("最低気温は数値で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温に正の整数3桁の上限が入力された場合(999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMinTemperatureNormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperature("999");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温に負の整数3桁の下限が入力された場合(-999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMinTemperatureNormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperature("-999");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温に正の整数3桁を超える入力がされた場合(1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMinTemperatureAbnormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperature("1000");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateForm(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温に負の整数3桁を下回る入力がされた場合(-1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormMinTemperatureAbnormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperature("-1000");
+        List<String> errorList = target.validateForm(form);
+
+        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目に正常な値が入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardNormal() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDateFrom("2015/01/01");
         form.setWeatherDateTo("2015/02/01");
@@ -320,154 +581,52 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索発展異常系のバリデーションテスト。(日付1つ目が日付形式でない場合)
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目がブランクの場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationAbnormalDateFrom() {
+    public void testValidateFormHardNormalAllBlank() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDateFrom("20150101");
+        form.setWeatherDateFrom("");
+        form.setWeatherDateTo("");
+        form.setPlace("");
+        form.setWeather("");
+        form.setMaxTemperatureFrom("");
+        form.setMaxTemperatureTo("");
+        form.setMinTemperatureFrom("");
+        form.setMinTemperatureTo("");
         List<String> errorList = target.validateFormHard(form);
 
-        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+        assertThat(errorList.size(), is(0));
     }
 
     /**
-     * 天気検索発展異常系のバリデーションテスト。(日付終了が日付形式でない場合)
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目がnullの場合
+     * </pre>
      */
     @Test
-    public void tesWeatherSearchHardtValidationAbnormalDateTo() {
+    public void testValidateFormHardNormalAllNull() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDateFrom("20150101");
         List<String> errorList = target.validateFormHard(form);
 
-        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+        assertThat(errorList.size(), is(0));
     }
 
     /**
-     * 天気検索発展異常系のバリデーションテスト。(場所が10文字を超えている場合)
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目に異常な値が入力された場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationOverflowPlace() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setPlace("12345678901");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("場所は10文字以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(天気が10文字を超えている場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationOverflowWeather() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("12345678901");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("天気は10文字以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最高気温1つ目に数値以外のものが入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationAbnormalMaxTemperatureFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperatureFrom("あ");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最高気温は数値で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最高気温終了に数値以外のものが入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationAbnormalMaxTemperatureTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperatureTo("あ");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最高気温は数値で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最高気温1つ目に3桁を超える値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationOverflowMaxTemperatureFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperatureFrom("1000");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最高気温終了に3桁を超える値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationOverflowMaxTemperatureTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperatureTo("1000");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最低気温1つ目に数値以外のものが入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationAbnormlMinTemperatureFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureFrom("あ");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最低気温は数値で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最低気温終了に数値以外のものが入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationAbnormlMinTemperatureTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureTo("あ");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最低気温は数値で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最低気温1つ目に3桁を超える値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationOverflowMinTemperatureFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureFrom("1000");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(最低気温終了に3桁を超える値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationOverflowMinTemperatureTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureTo("1000");
-        List<String> errorList = target.validateFormHard(form);
-
-        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
-    }
-
-    /**
-     * 天気検索異常系のバリデーションテスト。(全ての項目に異常な値が入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardValidationAbnormlAll() {
+    public void testValidateFormHardAbnormlAll() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDateFrom("20150101");
         form.setWeatherDateTo("20150101");
@@ -483,16 +642,566 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
         assertThat(errorList.get(1), is("場所は10文字以内で入力してください。"));
         assertThat(errorList.get(2), is("天気は10文字以内で入力してください。"));
         assertThat(errorList.get(3), is("最高気温は数値で入力してください。"));
-        assertThat(errorList.get(4), is("最低気温は数値で入力してください。"));
-        assertThat(errorList.get(5), is("最高気温は3桁以内で入力してください。"));
+        assertThat(errorList.get(4), is("最高気温は3桁以内で入力してください。"));
+        assertThat(errorList.get(5), is("最低気温は数値で入力してください。"));
         assertThat(errorList.get(6), is("最低気温は3桁以内で入力してください。"));
     }
 
     /**
-     * 天気検索発展正常系の入力項目間のバリデーションテスト。(全ての項目に正常な値が入力された場合)。
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(Form)の形式が不正な場合(yyyyMMdd)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationNormalBetweenItem() {
+    public void testValidateFormHardWeatherDateFromAbnormalFormat() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("20150101");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(Form)の形式が不正な場合(2015/01/01A)
+     * ※SimpleDateFormatを使用したパースでは前方一致で日付を取り扱うため、文字列の後ろに不正な値があっても無視されてしまう。
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateFromAbnormalFormatBackward() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/01/01A");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(Form)の形式が不正な場合(全角数字を使用)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateFromAbnormalFormatZenkaku() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("２０１５/０１/０１");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(Form)がうるう年の正常な日付の場合(2016/02/29)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateFromNormalDateLeapYear() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2016/02/29");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(Form)がうるう年の不正な日付の場合(2015/02/29)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateFromAbnormalDateLeapYear() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/02/29");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(To)の形式が不正な場合(yyyyMMdd)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateToAbnormalFormat() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateTo("20150101");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(To)の形式が不正な場合(2015/01/01A)
+     * ※SimpleDateFormatを使用したパースでは前方一致で日付を取り扱うため、文字列の後ろに不正な値があっても無視されてしまう。
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateToAbnormalFormatBackward() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateTo("2015/01/01A");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(To)の形式が不正な場合(全角数字を使用)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateToAbnormalFormatZenkaku() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateTo("２０１５/０１/０１");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(To)がうるう年の正常な日付の場合(2016/02/29)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateToNormalDateLeapYear() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateTo("2016/02/29");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付項目(To)がうるう年の不正な日付の場合(2015/02/29)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherDateToAbnormalDateLeapYear() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateTo("2015/02/29");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("日付は日付形式で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所項目の文字数が最大の場合（10文字）
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardPlaceNormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setPlace("場所れれれれれれれれ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所項目の文字数が最大数を超える場合（11文字）
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardPlaceAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setPlace("場所れれれれれれれれれ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("場所は10文字以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 天気項目の文字数が最大の場合（10文字）
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherNormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("天気れれれれれれれれ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 天気項目の文字数が最大数を超える場合（11文字）
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardWeatherAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("天気れれれれれれれれれ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("天気は10文字以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(From)に数値以外のものが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureFromAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("あ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最高気温は数値で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(From)に正の整数3桁の上限が入力された場合(999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureFromNormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(From)に負の整数3桁の下限が入力された場合(-999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureFromNormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("-999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(From)に正の整数3桁を超える入力がされた場合(1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureFromAbnormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(From)に負の整数3桁を下回る入力がされた場合(-1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureFromAbnormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("-1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(To)に数値以外のものが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureToAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureTo("あ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最高気温は数値で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(To)に正の整数3桁の上限が入力された場合(999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureToNormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureTo("999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(To)に負の整数3桁の下限が入力された場合(-999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureToNormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureTo("-999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(To)に正の整数3桁を超える入力がされた場合(1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureToAbnormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureTo("1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温(To)に負の整数3桁を下回る入力がされた場合(-1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMaxTemperatureToAbnormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureTo("-1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最高気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(From)に数値以外のものが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureFromAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("あ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最低気温は数値で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(From)に正の整数3桁の上限が入力された場合(999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureFromNormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(From)に負の整数3桁の下限が入力された場合(-999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureFromNormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("-999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(From)に正の整数3桁を超える入力がされた場合(1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureFromAbnormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(From)に負の整数3桁を下回る入力がされた場合(-1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureFromAbnormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("-1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(To)に数値以外のものが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureToAbnormal() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureTo("あ");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最低気温は数値で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(To)に正の整数3桁の上限が入力された場合(999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureToNormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureTo("999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(To)に負の整数3桁の下限が入力された場合(-999)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureToNormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureTo("-999");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(To)に正の整数3桁を超える入力がされた場合(1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureToAbnormalUpperLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureTo("1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateFormHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温(To)に負の整数3桁を下回る入力がされた場合(-1000)
+     * </pre>
+     */
+    @Test
+    public void testValidateFormHardMinTemperatureToAbnormalLowerLimit() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureTo("-1000");
+        List<String> errorList = target.validateFormHard(form);
+
+        assertThat(errorList.get(0), is("最低気温は3桁以内で入力してください。"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目に正常な値が入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateBetweenItemNormal() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDateFrom("2015/01/01");
         form.setWeatherDateTo("2015/02/01");
@@ -506,10 +1215,50 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索発展正常系の入力項目間のバリデーションテスト。(日付、最高気温、最低気温の1つ目の項目に値が入力された場合)。
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目がブランクの場合
+     * </pre>
      */
     @Test
-    public void testValidationNormalBetweenItemOnlyFirstItem() {
+    public void testValidateBetweenItemNormalAllBlank() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("");
+        form.setWeatherDateTo("");
+        form.setMaxTemperatureFrom("");
+        form.setMaxTemperatureTo("");
+        form.setMinTemperatureFrom("");
+        form.setMinTemperatureTo("");
+        List<String> errorList = target.validateBetweenItem(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目がnullの場合
+     * </pre>
+     */
+    @Test
+    public void testValidateBetweenItemNormalAllNull() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        List<String> errorList = target.validateBetweenItem(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付、最高気温、最低気温のFromのみが入力された場合
+     * </pre>
+     */
+    @Test
+    public void testValidateBetweenItemNormalFromOnly() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDateFrom("2015/01/01");
         form.setMaxTemperatureFrom("20");
@@ -520,10 +1269,14 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索発展正常系の入力項目間のバリデーションテスト。(日付、最高気温、最低気温の2つ目の項目に値が入力された場合)。
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付、最高気温、最低気温のToのみが入力された場合
+     * </pre>
      */
     @Test
-    public void testValidationNormalBetweenItemOnlySecondItem() {
+    public void testValidateBetweenItemNormalToOnly() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDateTo("2015/01/01");
         form.setMaxTemperatureTo("20");
@@ -534,264 +1287,299 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索発展異常系の入力項目間のバリデーションテスト。(日付の範囲指定が不正な場合)
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付の範囲指定(From,To)が同じ場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationAbnormalBetweenDate() {
+    public void testValidateBetweenItemWeatherDateNormalFromToEqual() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDateFrom("2015/02/01");
-        form.setWeatherDateTo("2015/01/01");
+        form.setWeatherDateTo("2015/02/01");
+        List<String> errorList = target.validateBetweenItem(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付の範囲指定(From,To)が不正な場合(From>To)
+     * </pre>
+     */
+    @Test
+    public void testValidateBetweenItemWeatherDateAbnormalFromTo() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/02/02");
+        form.setWeatherDateTo("2015/02/01");
         List<String> errorList = target.validateBetweenItem(form);
 
         assertThat(errorList.get(0), is("日付の範囲指定が不正です。"));
     }
 
     /**
-     * 天気検索発展異常系の入力項目間のバリデーションテスト。(最高気温の範囲指定が不正な場合)
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温の範囲指定(From,To)が不正な場合(From=To)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationAbnormalBetweenMaxTemperature() {
+    public void testValidateBetweenItemMaxTemperatureNormalFromToEqual() {
         WeatherSearchForm form = new WeatherSearchForm();
         form.setMaxTemperatureFrom("20");
-        form.setMaxTemperatureTo("10");
+        form.setMaxTemperatureTo("20");
+        List<String> errorList = target.validateBetweenItem(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温の範囲指定(From,To)が不正な場合(From>To)
+     * </pre>
+     */
+    @Test
+    public void testValidateBetweenItemMaxTemperatureAbnormalFromTo() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("20");
+        form.setMaxTemperatureTo("19");
         List<String> errorList = target.validateBetweenItem(form);
 
         assertThat(errorList.get(0), is("最高気温の範囲指定が不正です。"));
     }
 
     /**
-     * 天気検索発展異常系の入力項目間のバリデーションテスト。(最高気温の範囲指定が不正な場合)
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温の範囲指定(From,To)が不正な場合(From=To)
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardValidationAbnormalBetweenMinTemperature() {
+    public void testValidateBetweenItemMinTemperatureNormalFromToEqual() {
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureFrom("20");
-        form.setMinTemperatureTo("10");
+        form.setMinTemperatureFrom("-10");
+        form.setMinTemperatureTo("-10");
+        List<String> errorList = target.validateBetweenItem(form);
+
+        assertThat(errorList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#validateBetweenItem(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温の範囲指定(From,To)が不正な場合(From>To)
+     * </pre>
+     */
+    @Test
+    public void testValidateBetweenItemMinTemperatureAbnormalFromTo() {
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("-10");
+        form.setMinTemperatureTo("-11");
         List<String> errorList = target.validateBetweenItem(form);
 
         assertThat(errorList.get(0), is("最低気温の範囲指定が不正です。"));
     }
 
     /**
-     * 天気検索発展SQLテスト。(全ての項目が入力されなかった場合)
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 検索条件を設定せずに検索を行った場合
+     * </pre>
      */
     @Test
-    public void testWeatherSearchHardSqlAllEmpty() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER"));
-        assertThat(resultCondition.get("weatherDateFrom"), is(nullValue()));
-        assertThat(resultCondition.get("weatherDateTo"), is(nullValue()));
-        assertThat(resultCondition.get("place"), is(nullValue()));
-        assertThat(resultCondition.get("weather"), is(nullValue()));
-        assertThat(resultCondition.get("maxTemperatureFrom"), is(nullValue()));
-        assertThat(resultCondition.get("maxTemperatureTo"), is(nullValue()));
-        assertThat(resultCondition.get("minTemperatureFrom"), is(nullValue()));
-        assertThat(resultCondition.get("minTemperatureTo"), is(nullValue()));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(日付1つ目だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyDateFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDateFrom("2015/01/01");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE WEATHER_DATE >= :weatherDateFrom"));
-        assertThat(resultCondition.get("weatherDateFrom"), is("2015/01/01"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(日付2つ目だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyDateTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDateTo("2015/01/01");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE WEATHER_DATE <= :weatherDateTo"));
-        assertThat(resultCondition.get("weatherDateTo"), is("2015/01/01"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(場所だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyPlace() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setPlace("東京");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE PLACE = :place"));
-        assertThat(resultCondition.get("place"), is("東京"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(天気が1つだけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyOneWeather() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("晴れ");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE (WEATHER = :weather)"));
-        assertThat(resultCondition.get("weather"), is("晴れ"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(天気が2つ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyTwoWeather() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("晴れ,曇り");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE (WEATHER = :weather OR WEATHER = :weather2)"));
-        assertThat(resultCondition.get("weather"), is("晴れ"));
-        assertThat(resultCondition.get("weather2"), is("曇り"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(天気が3つ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyThreeWeather() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("晴れ,曇り,雨");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE (WEATHER = :weather OR WEATHER = :weather2 OR WEATHER = :weather3)"));
-        assertThat(resultCondition.get("weather"), is("晴れ"));
-        assertThat(resultCondition.get("weather2"), is("曇り"));
-        assertThat(resultCondition.get("weather3"), is("雨"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(天気が4つ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyFourWeather() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeather("晴れ,曇り,雨,雪");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER"));
-        assertThat(resultCondition.get("weather"), is(nullValue()));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(最高気温1つ目だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyMaxTemperatureFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperatureFrom("20");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE MAX_TEMPERATURE >= :maxTemperatureFrom"));
-        assertThat(resultCondition.get("maxTemperatureFrom"), is("20"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(最高気温2つ目だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyMaxTemperatureTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMaxTemperatureTo("20");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE MAX_TEMPERATURE <= :maxTemperatureTo"));
-        assertThat(resultCondition.get("maxTemperatureTo"), is("20"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(最低気温1つ目だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyMinTemperatureFrom() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureFrom("20");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE MIN_TEMPERATURE >= :minTemperatureFrom"));
-        assertThat(resultCondition.get("minTemperatureFrom"), is("20"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(最低気温2つ目だけ入力された場合)
-     */
-    @Test
-    public void testWeatherSearchHardSqlOnlyMinTemperatureTo() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setMinTemperatureTo("20");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is("SELECT * FROM WEATHER WHERE MIN_TEMPERATURE <= :minTemperatureTo"));
-        assertThat(resultCondition.get("minTemperatureTo"), is("20"));
-    }
-
-    /**
-     * 天気検索発展SQLテスト。(全ての項目が入力されていて、天気が1つ選択されている場合)
-     */
-    @Test
-    public void testSqlAllOnlyOneWeatherHard() {
-        WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDateFrom("2015/01/01");
-        form.setWeatherDateTo("2015/02/01");
-        form.setPlace("東京");
-        form.setWeather("晴れ");
-        form.setMaxTemperatureFrom("20");
-        form.setMaxTemperatureTo("30");
-        form.setMinTemperatureFrom("0");
-        form.setMinTemperatureTo("10");
-        String resultSql = target.createSqlHard(form);
-        Map<String, String> resultCondition = target.createConditionHard(form);
-
-        assertThat(resultSql, is(
-                "SELECT * FROM WEATHER WHERE WEATHER_DATE >= :weatherDateFrom and WEATHER_DATE <= :weatherDateTo and PLACE = :place and (WEATHER = :weather) and MAX_TEMPERATURE >= :maxTemperatureFrom and MAX_TEMPERATURE <= :maxTemperatureTo and MIN_TEMPERATURE >= :minTemperatureFrom and MIN_TEMPERATURE <= :minTemperatureTo"));
-        assertThat(resultCondition.get("weatherDateFrom"), is("2015/01/01"));
-        assertThat(resultCondition.get("weatherDateTo"), is("2015/02/01"));
-        assertThat(resultCondition.get("place"), is("東京"));
-        assertThat(resultCondition.get("weather"), is("晴れ"));
-        assertThat(resultCondition.get("maxTemperatureFrom"), is("20"));
-        assertThat(resultCondition.get("maxTemperatureTo"), is("30"));
-        assertThat(resultCondition.get("minTemperatureFrom"), is("0"));
-        assertThat(resultCondition.get("minTemperatureTo"), is("10"));
-    }
-
-    /**
-     * 天気検索の天気情報検索のテスト。
-     */
-    @Test
-    public void testSearchWeather() {
+    public void testFindBySqlNoCondition() {
         // 事前データ準備
         weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
-        weatherDao.insert(String.format(insertSql, "2015/01/02", "群馬", "曇り", "11", "6"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlAllCondition() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDate("2015/01/02");
+        form.setPlace("東京");
+        form.setWeather("曇り");
+        form.setMaxTemperature("11");
+        form.setMinTemperature("6");
+
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 検索結果が0件となる条件の場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlNoResult() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
 
         WeatherSearchForm form = new WeatherSearchForm();
         form.setWeatherDate("2015/01/01");
+        form.setPlace("東京");
+
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlWeatherDate() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDate("2015/01/01");
+
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlPlace() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
         form.setPlace("群馬");
+
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 天気を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlWeather() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
         form.setWeather("晴れ");
+
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlMaxTemperature() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
         form.setMaxTemperature("7");
+
+        List<Weather> resultWeatherList = target.findBySql(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySql(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlMinTemperature() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
         form.setMinTemperature("-3");
 
         List<Weather> resultWeatherList = target.findBySql(form);
@@ -804,30 +1592,567 @@ public class WeatherSearchLogicTest extends AbstractTransactionalJUnit4SpringCon
     }
 
     /**
-     * 天気検索発展の天気情報検索のテスト。
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 検索条件を設定せずに検索を行った場合
+     * </pre>
      */
     @Test
-    public void testSearchWeatherHard() {
+    public void testFindBySqlHardNoCondition() {
         // 事前データ準備
-        weatherDao.insert(String.format(insertSql, "2015/01/01", "東京", "晴れ", "10", "5"));
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
         weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
 
         WeatherSearchForm form = new WeatherSearchForm();
-        form.setWeatherDateFrom("2010/01/01");
-        form.setWeatherDateTo("2016/01/01");
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 全ての項目を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardAllCondition() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/01/01");
+        form.setWeatherDateTo("2015/01/02");
         form.setPlace("東京");
-        form.setWeather("晴れ");
-        form.setMaxTemperatureFrom("7");
-        form.setMaxTemperatureTo("10");
-        form.setMinTemperatureFrom("-3");
-        form.setMinTemperatureTo("5");
+        form.setWeather("晴れ,曇り");
+        form.setMaxTemperatureFrom("10");
+        form.setMaxTemperatureTo("20");
+        form.setMinTemperatureFrom("5");
+        form.setMinTemperatureTo("10");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("6"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 検索結果が0件となる条件の場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardNoResult() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/01/02");
+        form.setPlace("群馬");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(0));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付の範囲指定(From)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeatherDateFrom() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "10", "3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "3", "-1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/01/02");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("6"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("10"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("3"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/04"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("神奈川"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雪"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("3"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("-1"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付の範囲指定(To)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeatherDateTo() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "10", "3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "3", "-1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateTo("2015/01/03");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("6"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("10"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 日付の範囲指定(From,To)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeatherDateFromTo() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "10", "3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "3", "-1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeatherDateFrom("2015/01/02");
+        form.setWeatherDateTo("2015/01/03");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("11"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("6"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("10"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 場所を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardPlace() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "7", "-3"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "11", "6"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setPlace("群馬");
 
         List<Weather> resultWeatherList = target.findBySqlHard(form);
         assertThat(resultWeatherList.size(), is(1));
         assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
-        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
         assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
-        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("10"));
-        assertThat(resultWeatherList.get(0).getMinTemperature(), is("5"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("7"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-3"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 1つの天気を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeather1() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("晴れ");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(1));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-2"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 2つの天気を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeather2() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("晴れ,曇り");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-2"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("-1"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 3つの天気を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeatherSelect3() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("晴れ,曇り,雨");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-2"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("0"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 4つの天気を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardWeatherSelect4() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setWeather("晴れ,曇り,雨,雪");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(4));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-2"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("0"));
+        assertThat(resultWeatherList.get(3).getWeatherDate(), is("2015/01/04"));
+        assertThat(resultWeatherList.get(3).getPlace(), is("神奈川"));
+        assertThat(resultWeatherList.get(3).getWeather(), is("雪"));
+        assertThat(resultWeatherList.get(3).getMaxTemperature(), is("2"));
+        assertThat(resultWeatherList.get(3).getMinTemperature(), is("1"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温の範囲指定(From)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardMaxTemperatureFrom() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("0");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("0"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/04"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("神奈川"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雪"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("2"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("1"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温の範囲指定(To)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardMaxTemperatureTo() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureTo("1");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-2"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("0"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最高気温の範囲指定(From,To)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardMaxTemperatureFromTo() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMaxTemperatureFrom("0");
+        form.setMaxTemperatureTo("1");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("0"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温の範囲指定(From)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardMinTemperatureFrom() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("-1");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("0"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/04"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("神奈川"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雪"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("2"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("1"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温の範囲指定(To)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardMinTemperatureTo() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureTo("0");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(3));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/01"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("群馬"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("晴れ"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-2"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(2).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(2).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(2).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(2).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(2).getMinTemperature(), is("0"));
+    }
+
+    /**
+     * {@link WeatherSearchLogic#findBySqlHard(WeatherSearchForm)}のテスト。
+     *
+     * <pre>
+     * 最低気温の範囲指定(From,To)を条件に天気情報を検索する場合
+     * </pre>
+     */
+    @Test
+    public void testFindBySqlHardMinTemperatureFromTo() {
+        // 事前データ準備
+        weatherDao.insert(String.format(insertSql, "2015/01/01", "群馬", "晴れ", "-1", "-2"));
+        weatherDao.insert(String.format(insertSql, "2015/01/02", "東京", "曇り", "0", "-1"));
+        weatherDao.insert(String.format(insertSql, "2015/01/03", "埼玉", "雨", "1", "0"));
+        weatherDao.insert(String.format(insertSql, "2015/01/04", "神奈川", "雪", "2", "1"));
+
+        WeatherSearchForm form = new WeatherSearchForm();
+        form.setMinTemperatureFrom("-1");
+        form.setMinTemperatureTo("0");
+
+        List<Weather> resultWeatherList = target.findBySqlHard(form);
+        assertThat(resultWeatherList.size(), is(2));
+        assertThat(resultWeatherList.get(0).getWeatherDate(), is("2015/01/02"));
+        assertThat(resultWeatherList.get(0).getPlace(), is("東京"));
+        assertThat(resultWeatherList.get(0).getWeather(), is("曇り"));
+        assertThat(resultWeatherList.get(0).getMaxTemperature(), is("0"));
+        assertThat(resultWeatherList.get(0).getMinTemperature(), is("-1"));
+        assertThat(resultWeatherList.get(1).getWeatherDate(), is("2015/01/03"));
+        assertThat(resultWeatherList.get(1).getPlace(), is("埼玉"));
+        assertThat(resultWeatherList.get(1).getWeather(), is("雨"));
+        assertThat(resultWeatherList.get(1).getMaxTemperature(), is("1"));
+        assertThat(resultWeatherList.get(1).getMinTemperature(), is("0"));
     }
 }
