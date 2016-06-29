@@ -56,7 +56,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 正常系のバリデーションテスト。
+     * {@link CsvRegisterLogic#validateForm(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 正常な値が入力された場合
+     * </pre>
      */
     @Test
     public void testValidationNormal() {
@@ -69,7 +72,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 異常系のバリデーションテスト（ファイルパスが未入力の場合）。
+     * {@link CsvRegisterLogic#validateForm(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 異常な値が入力された場合（ファイルパスが未入力の場合）
+     * </pre>
      */
     @Test
     public void testValidationEmptyFilePath() {
@@ -81,7 +87,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 異常系のバリデーションテスト（ファイルパスで指定したファイルの拡張子が.csvでない場合）。
+     * {@link CsvRegisterLogic#validateForm(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 異常な値が入力された場合（ファイルパスで指定したファイルの拡張子が.csvでない場合）
+     * </pre>
      */
     @Test
     public void testValidationNotCsv() {
@@ -94,7 +103,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 正常な読み込み処理。
+     * {@link CsvRegisterLogic#createCsvDataList(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 正常な値が入力された場合
+     * </pre>
      */
     @Test
     public void testCsvReadNormal() {
@@ -112,7 +124,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 読み込み処理（存在しないCSVファイルに読み込み処理を実行した場合）。
+     * {@link CsvRegisterLogic#createCsvDataList(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 異常な値が入力された場合（存在しないCSVファイルに読み込み処理を実行した場合）
+     * </pre>
      */
     @Test
     public void testCsvReadNoFile() {
@@ -128,7 +143,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 読み込み処理（ヘッダー部が存在しないCSVファイルに読み込み処理を実行した場合）。
+     * {@link CsvRegisterLogic#createCsvDataList(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 異常な値が入力された場合（ヘッダー部が存在しないCSVファイルに読み込み処理を実行した場合）
+     * </pre>
      */
     @Test
     public void testCsvReadNoHeader() {
@@ -144,7 +162,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 読み込み処理（ヘッダー部の項目名数とデータ部のデータ数が一致しないCSVファイルに読み込み処理を実行した場合）。
+     * {@link CsvRegisterLogic#createCsvDataList(CsvRegisterForm)}のテスト。
+     * <pre>
+     * 異常な値が入力された場合（ヘッダー部の項目名数とデータ部のデータ数が一致しないCSVファイルに読み込み処理を実行した場合）
+     * </pre>
      */
     @Test
     public void testCsvReadDeferentNumberOfItemBetweenHeaderAndData() {
@@ -160,7 +181,10 @@ public class CsvRegisterLogicTest extends AbstractTransactionalJUnit4SpringConte
     }
 
     /**
-     * 登録処理。
+     * {@link CsvRegisterLogic#insert(List<String>)}のテスト。
+     * <pre>
+     * 登録処理
+     * </pre>
      */
     @Test
     public void testInsertNormal() {
