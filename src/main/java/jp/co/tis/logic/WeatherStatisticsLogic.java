@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,30 +43,45 @@ public class WeatherStatisticsLogic {
     public List<String> validateForm(WeatherStatisticsForm form) {
         List<String> errorList = new ArrayList<String>();
 
-        if (StringUtils.isEmpty(form.getWeatherDate()) || StringUtils.isEmpty(form.getPlace())) {
-            errorList.add("日付と場所は、必ず両方入力してください。");
-        }
-        DateFormat format = new SimpleDateFormat("MM/dd");
-        try {
-            if (!StringUtils.isEmpty(form.getWeatherDate())) {
-                format.setLenient(false);
-                format.parse(form.getWeatherDate());
-            }
-        } catch (ParseException e) {
+        if (!StringUtils.isEmpty(form.getWeatherDate()) && !isValidDate(form.getWeatherDate())) {
             errorList.add("日付はMM/dd形式で入力してください。");
         }
         if (!StringUtils.isEmpty(form.getPlace()) && form.getPlace().length() > 10) {
             errorList.add("場所は10文字以内で入力してください。");
+        }
+        if (StringUtils.isEmpty(form.getWeatherDate()) || StringUtils.isEmpty(form.getPlace())) {
+            errorList.add("日付と場所は、必ず両方入力してください。");
         }
 
         return errorList;
     }
 
     /**
-     * 過去5年分の天気のリストを作成する。
+     * 有効な日付かどうかを判定する。
+     *
+     * @param date 日付
+     * @return 有効な日付の場合 True / 無効な日付の場合 false
+     */
+    private boolean isValidDate(String date) {
+        DateFormat format = new SimpleDateFormat("yyyy/MM/dd");
+        format.setLenient(false);
+        try {
+            // 2/29に対応するため、うるう年を基準にパースを行う。
+            format.parse("2016/" + date);
+        } catch (ParseException e) {
+            return false;
+        }
+        if (!Pattern.compile("^(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])$").matcher(date).find()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 過去天気のリストを作成する。
      *
      * @param form フォーム
-     * @return 過去5年分の天気のリスト
+     * @return 過去天気のリスト
      */
     public List<Weather> createPastWeatherList(WeatherStatisticsForm form) {
         String selectSql = "SELECT * FROM WEATHER WHERE WEATHER_DATE LIKE :percentMonthAndDay AND PLACE = :place";

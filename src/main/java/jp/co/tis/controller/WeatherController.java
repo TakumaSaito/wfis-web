@@ -76,6 +76,36 @@ public class WeatherController {
     }
 
     /**
+     * 天気一覧画面へ遷移する。
+     *
+     * @return ModelAndView
+     */
+    @RequestMapping("/weatherList")
+    public ModelAndView weatherList() {
+        ModelAndView modelAndView = new ModelAndView();
+        List<Weather> weatherList = weatherSearchLogic.findBySqlWeatherList();
+
+        modelAndView.addObject("weatherList", weatherList);
+        modelAndView.setViewName("weatherList");
+        return modelAndView;
+    }
+
+    /**
+     * 天気簡易検索TOP画面へ遷移する。
+     *
+     * @return ModelAndView
+     */
+    @RequestMapping("/weatherSimpleSearch/top")
+    public ModelAndView weatherSimpleSearchTop() {
+        ModelAndView modelAndView = new ModelAndView();
+        List<Weather> weatherList = weatherSearchLogic.findBySqlWeatherList();
+
+        modelAndView.addObject("weatherList", weatherList);
+        modelAndView.setViewName("weatherSimpleSearch");
+        return modelAndView;
+    }
+
+    /**
      * 天気検索TOP画面へ遷移する。
      *
      * @return ModelAndView
@@ -128,7 +158,24 @@ public class WeatherController {
     }
 
     /**
-     * 天気の検索を行う。
+     * 天気の検索を行う（天気簡易検索）。
+     *
+     * @param form フォーム
+     * @return ModelAndView
+     */
+    @RequestMapping("/weatherSimpleSearch/search")
+    public ModelAndView simpleSearch(WeatherSearchForm form) {
+        ModelAndView modelAndView = new ModelAndView();
+        List<Weather> weatherList = weatherSearchLogic.findBySqlSimple(form);
+
+        modelAndView.addObject("form", form);
+        modelAndView.addObject("weatherList", weatherList);
+        modelAndView.setViewName("weatherSimpleSearch");
+        return modelAndView;
+    }
+
+    /**
+     * 天気の検索を行う（天気検索）。
      *
      * @param form フォーム
      * @return ModelAndView
